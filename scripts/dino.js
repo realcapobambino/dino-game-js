@@ -1,24 +1,49 @@
+import {
+	getCustomProperty,
+	incrementCustomProperty,
+	setCustomProperty
+} from "./updateCustomProperties.js";
+
 const dinoElement = document.querySelector("[data-dino]");
 const JUMP_SPEED = 0.45;
-const GRAVITY = 0.011;
+const GRAVITY = 0.0015;
 const DINO_FRAME_COUNT = 2;
 const FRAME_TIME = 100;
 
 let isJumping;
 let dinoFrame;
 let currentFrameTime;
+let yVelocity;
+
+//
 export function setupDino() {
 	isJumping = false;
 	dinoFrame = 0;
 	currentFrameTime = 0;
+	yVelocity = 0;
+	setCustomProperty(dinoElement, "--bottom", 0);
+	document.removeEventListener("keydown", onJump);
+	document.addEventListener("keydown", onJump);
 }
 
+//
 export function updateDino(delta, speedScale) {
 	//
 	handleRun(delta, speedScale);
 	handleJump(delta);
 }
 
+// draw rect around dino
+export function getDinoRectangle() {
+	return dinoElement.getBoundingClientRect();
+}
+
+//
+export function setDinoLose() {
+	dinoElement.src = "/img/dino-lose.png";
+}
+
+//
 function handleRun(delta, speedScale) {
 	if (isJumping) {
 		//
@@ -27,7 +52,7 @@ function handleRun(delta, speedScale) {
 	}
 
 	if (currentFrameTime >= FRAME_TIME) {
-		//update frame to next frame --
+		// update frame to next frame --
 		dinoFrame = (dinoFrame + 1) % DINO_FRAME_COUNT;
 		dinoElement.src = `/img/dino-run-${dinoFrame}.png`;
 		currentFrameTime -= FRAME_TIME;
@@ -35,6 +60,25 @@ function handleRun(delta, speedScale) {
 	currentFrameTime += delta * speedScale;
 }
 
-function handleJump() {
+//
+function handleJump(delta) {
 	//
+	if (!isJumping) return;
+
+	incrementCustomProperty(dinoElement, "--bottom", yVelocity * delta);
+
+	if (getCustomProperty(dinoElement, "--bottom") <= 0) {
+		setCustomProperty(dinoElement, "--bottom", 0);
+		isJumping = false;
+	}
+	yVelocity -= GRAVITY * delta;
 }
+
+//
+function onJump(e) {
+	if (e.code !== "Space" || isJumping) return;
+	yVelocity = JUMP_SPEED;
+	isJumping = true;
+}
+
+//
